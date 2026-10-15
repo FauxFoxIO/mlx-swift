@@ -38,7 +38,7 @@ set(apply_patch ${CMAKE_COMMAND} -DREPO=<SOURCE_DIR>)
 set(apply_patch_script -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/apply-patch.cmake)
 
 # note: this must be declared (and named `mlx`) before mlx-c is made available
-# so that our pinned/patched version wins over the one mlx-c declares. Because
+# so that our pinned version wins over the one mlx-c declares. Because
 # we now pull mlx in first, we are also responsible for the option defaults that
 # mlx-c would normally set for us.
 set(MLX_BUILD_TESTS OFF)
