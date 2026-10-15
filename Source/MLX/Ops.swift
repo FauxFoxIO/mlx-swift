@@ -1491,7 +1491,7 @@ public func gatherMM(
 @available(
     *, deprecated,
     renamed:
-        "gatherQuantizedMM(_:_:scales:biases:lhsIndices:rhsIndices:transpose:groupSize:bits:mode:sortedIndices:stream:)"
+        "gatherQuantizedMM(_:_:scales:biases:lhsIndices:rhsIndices:transpose:groupSize:bits:mode:globalScale:sortedIndices:stream:)"
 )
 public func gatherQuantizedMatmul(
     _ x: MLXArray, _ w: MLXArray, scales: MLXArray, biases: MLXArray?,
@@ -1528,6 +1528,8 @@ public func gatherQuantizedMatmul(
 ///   - groupSize: The size of the group in `w` that shares a scale and bias. Default is `64`
 ///   - bits: The number of bits occupied by each element in `w`. Default is `4`
 ///   - mode: The quantization mode. Default is `.affine`
+///   - globalScale: The float32 ``QuantizationMode/nvfp4`` global scale, one per
+///     matrix in `w` (e.g. shape `[experts]`), applied in the kernel.  GPU only
 ///   - sortedIndices: Whether the indices are sorted. Default is `false`
 ///   - stream: Stream or device to evaluate on
 ///
@@ -1539,6 +1541,7 @@ public func gatherQuantizedMM(
     lhsIndices: MLXArray? = nil, rhsIndices: MLXArray? = nil,
     transpose: Bool = true, groupSize: Int? = nil, bits: Int? = nil,
     mode: QuantizationMode = .affine,
+    globalScale: MLXArray? = nil,
     sortedIndices: Bool = false,
     stream: StreamOrDevice = .default
 ) -> MLXArray {
@@ -1551,7 +1554,7 @@ public func gatherQuantizedMM(
         &result,
         x.ctx, w.ctx, scales.ctx, (biases ?? .mlxNone).ctx, (lhsIndices ?? .mlxNone).ctx,
         (rhsIndices ?? .mlxNone).ctx, transpose,
-        gs, bits, mode.rawValue, MLXArray.mlxNone.ctx, sortedIndices,
+        gs, bits, mode.rawValue, (globalScale ?? .mlxNone).ctx, sortedIndices,
         stream.ctx)
 
     return MLXArray(result)

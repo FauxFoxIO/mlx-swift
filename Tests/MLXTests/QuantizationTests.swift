@@ -37,6 +37,51 @@ class QuantizationTests: XCTestCase {
         assertEqual(actual, expected, rtol: 1e-5, atol: 1e-5)
     }
 
+    func testGatherQuantizedMMAppliesNVFP4GlobalScale() {
+        // gather_qmm takes one global scale per expert, on the GPU only
+        let (input, rhsIndices, quantizedWeight, scales, globalScale, expected) =
+            Device.withDefaultDevice(.cpu) {
+                MLXRandom.seed(5)
+                let weight = MLXRandom.uniform(low: -2, high: 2, [2, 32, 32])
+                let input = MLXRandom.uniform(low: -1, high: 1, [3, 1, 32])
+                let rhsIndices = MLXArray([1, 0, 1] as [UInt32])
+                let globalScale = MLX.max(abs(weight), axes: [1, 2]).asType(.float32)
+                let experts = (0 ..< 2).map { e in
+                    MLX.quantized(
+                        weight[e], groupSize: 16, bits: 4, mode: .nvfp4,
+                        globalScale: globalScale[e])
+                }
+                let quantizedWeight = stacked(experts.map { $0.wq })
+                let scales = stacked(experts.map { $0.scales })
+                let dequantizedWeight = stacked(
+                    (0 ..< 2).map { e in
+                        dequantized(
+                            experts[e].wq, scales: experts[e].scales, biases: nil,
+                            groupSize: 16, bits: 4, mode: .nvfp4, globalScale: globalScale[e],
+                            dtype: .float32)
+                    })
+                let expected = matmul(input, dequantizedWeight[rhsIndices].swappedAxes(-1, -2))
+                eval(quantizedWeight, scales, expected)
+                return (input, rhsIndices, quantizedWeight, scales, globalScale, expected)
+            }
+
+        for device in [Device.gpu] {
+            let (actual, unscaled) = Device.withDefaultDevice(device) {
+                (
+                    gatherQuantizedMM(
+                        input, quantizedWeight, scales: scales, biases: nil,
+                        rhsIndices: rhsIndices, groupSize: 16, bits: 4, mode: .nvfp4,
+                        globalScale: globalScale),
+                    gatherQuantizedMM(
+                        input, quantizedWeight, scales: scales, biases: nil,
+                        rhsIndices: rhsIndices, groupSize: 16, bits: 4, mode: .nvfp4)
+                )
+            }
+            assertEqual(actual, expected, rtol: 1e-4, atol: 1e-4)
+            XCTAssertFalse(unscaled.allClose(expected, rtol: 1e-4, atol: 1e-4).item(Bool.self))
+        }
+    }
+
     func testQuantizedEmbeddingAppliesNVFP4GlobalScaleOnMetal() {
         let (
             input, indices, quantizedWeight, scales, biases, globalScale, expectedLinear,
