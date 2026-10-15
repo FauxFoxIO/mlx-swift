@@ -124,12 +124,15 @@ public enum MLXDistributed {
     /// backend is configured but cannot form its group, e.g. the ring backend
     /// with a malformed `MLX_HOSTFILE`.
     ///
-    /// MLX caches the group for each backend for the life of the process,
-    /// including the group of size one that a non-strict call falls back to,
-    /// and a later strict call for that backend returns the cached group
-    /// instead of throwing.  A non-strict ``Backend/any`` that finds no backend
-    /// caches its fallback under ``Backend/jaccl``.  Initialize strictly
-    /// before anything else initializes the backend.
+    /// MLX caches the group each backend forms for the life of the process
+    /// and returns it from later calls for that backend (or ``Backend/any``).
+    /// The group of size one that a non-strict call falls back to is not
+    /// cached, so a later call tries to form a group again.
+    ///
+    /// ``Backend/jaccl`` (RDMA over Thunderbolt 5) is built only for macOS and
+    /// needs macOS 26.2+ with RDMA enabled.  It reads `MLX_RANK`,
+    /// `MLX_IBV_DEVICES` (a JSON file of the RDMA device connecting each pair
+    /// of ranks) and `MLX_JACCL_COORDINATOR` (`ip:port` that rank 0 listens on).
     ///
     /// - Parameters:
     ///   - backend: the backend to use, defaulting to ``Backend/any``

@@ -42,7 +42,12 @@ class DistributedTests: XCTestCase {
     /// Backends that are not compiled in report `false` rather than trapping.
     func testUnavailableBackendsReportFalse() {
         XCTAssertFalse(MLXDistributed.isAvailable(.mpi))
-        XCTAssertFalse(MLXDistributed.isAvailable(.jaccl))
+
+        // JACCL is built only for macOS, where availability depends on the OS
+        // providing librdma (macOS 26.2+)
+        #if !os(macOS)
+            XCTAssertFalse(MLXDistributed.isAvailable(.jaccl))
+        #endif
 
         // nccl is CUDA-only and is never built on Apple platforms
         #if !os(Linux)
@@ -85,6 +90,22 @@ class DistributedTests: XCTestCase {
         }
 
         XCTAssertThrowsError(try MLXDistributed.initialize(backend: .any))
+    }
+
+    /// Without its environment (rank, device file, coordinator) JACCL cannot
+    /// form a group: a strict init throws and a non-strict one falls back to a
+    /// group of size one, whether or not RDMA is available.
+    func testJACCLWithoutConfigurationFallsBack() throws {
+        let environment = ProcessInfo.processInfo.environment
+        try XCTSkipIf(
+            ["MLX_IBV_DEVICES", "JACCL_IBV_DEVICES"].contains { environment[$0] != nil },
+            "a JACCL device file is configured")
+
+        XCTAssertThrowsError(try MLXDistributed.initialize(backend: .jaccl, strict: true))
+
+        let group = try MLXDistributed.initialize(backend: .jaccl)
+        XCTAssertEqual(group.rank, 0)
+        XCTAssertEqual(group.size, 1)
     }
 
     func testSplitSingletonGroupThrows() throws {
