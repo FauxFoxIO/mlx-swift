@@ -16,6 +16,10 @@ mlx_source="$PWD/Source/Cmlx/mlx"
 rm -f Source/Cmlx/include/mlx/c/*
 cp Source/Cmlx/mlx-c/mlx/c/*.h Source/Cmlx/include/mlx/c
 
+# match mlx-c-compat/ops_compat.cpp: mlx_gather_qmm takes global_scale (mlx >= 0.32.3)
+perl -0pi -e 's/(int mlx_gather_qmm\((?:(?!\);).)*?const char\* mode,\n)(\s*)(bool sorted_indices,)/$1$2const mlx_array global_scale \/\* may be null \*\/,\n$2$3/s' \
+    Source/Cmlx/include/mlx/c/ops.h
+
 # run the command to do the build-time code generation for Metal
 
 mkdir build

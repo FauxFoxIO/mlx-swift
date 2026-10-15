@@ -12,7 +12,8 @@ fi
 
 # prepare public headers for Cmlx
 rm -f Source/Cmlx/include-framework/*.h
-cp Source/Cmlx/mlx-c/mlx/c/*.h Source/Cmlx/include-framework
+# from include/ rather than mlx-c, to pick up the update-mlx.sh header fixups
+cp Source/Cmlx/include/mlx/c/*.h Source/Cmlx/include-framework
 
 # rewrite paths
 for x in Source/Cmlx/include-framework/*.h ; do \

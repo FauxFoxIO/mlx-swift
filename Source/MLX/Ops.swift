@@ -1551,7 +1551,7 @@ public func gatherQuantizedMM(
         &result,
         x.ctx, w.ctx, scales.ctx, (biases ?? .mlxNone).ctx, (lhsIndices ?? .mlxNone).ctx,
         (rhsIndices ?? .mlxNone).ctx, transpose,
-        gs, bits, mode.rawValue, sortedIndices,
+        gs, bits, mode.rawValue, MLXArray.mlxNone.ctx, sortedIndices,
         stream.ctx)
 
     return MLXArray(result)

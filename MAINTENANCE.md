@@ -135,6 +135,8 @@ pre-generating the source when updating the `mlx` version.
 2. Add any vendored dependencies as needed in `/vendor`
 
 3. Regenerate any build-time source: `./tools/update-mlx.sh`
+    - `Source/Cmlx/mlx-c-compat` (and `cmake/mlx-c.patch`) bind mlx API that the pinned mlx-c lacks;
+      drop them once mlx-c catches up
     - this updates headers in Source/Cmlx/include
     - this updates headers in Source/Cmlx/include-framework
     - this generates various files in Source/Cmlx/mlx-generated
