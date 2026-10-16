@@ -217,6 +217,7 @@ let noCudaCmlxExcludes = [
             "mlx/mlx/backend/cpu/compiled.cpp",
             "mlx/mlx/backend/cpu/jit_compiler.cpp",
             "mlx/mlx/distributed/jaccl/no_jaccl.cpp",
+            "mlx/mlx/backend/metal/fence.cpp",
 
             // opt-out of these backends (using metal)
             "mlx/mlx/backend/no_gpu",

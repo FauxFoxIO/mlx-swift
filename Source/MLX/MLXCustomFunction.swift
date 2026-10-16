@@ -102,6 +102,18 @@ final class _CustomFunctionState: @unchecked Sendable {
 
     func call(_ inputs: [MLXArray]) -> [MLXArray] {
         lock.withLock {
+            // mlx::core::custom_function wraps the outputs in ops on the C++ default stream.
+            // Make that Swift's default stream, so the graph does not span two GPU streams.
+            let stream = Stream.defaultStream
+            let device = stream.device
+            var previous = mlx_stream_new()
+            defer { mlx_stream_free(previous) }
+            withExtendedLifetime((stream, device)) {
+                _ = mlx_get_default_stream(&previous, device.ctx)
+                _ = mlx_set_default_stream(stream.ctx)
+            }
+            defer { _ = mlx_set_default_stream(previous) }
+
             let inVec = new_mlx_vector_array(inputs)
             defer { mlx_vector_array_free(inVec) }
 
